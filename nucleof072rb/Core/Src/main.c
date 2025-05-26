@@ -19,6 +19,8 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "spi.h"
+#include "tim.h"
 #include "usart.h"
 #include "gpio.h"
 
@@ -34,6 +36,9 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+#define MIN_Count 1000 // 1000 count = 1ms, min duty cycle
+#define MAX_Count 2000 // 2ms max duty cycle
+#define ADC_MAX 1023   // max digital value of ADC (2^10 - 1)
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -44,6 +49,12 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
+
+uint8_t RxData[3];
+uint8_t TxData[3] = {0x01, 0x80, 0x00};  // initiate communication, configure single ended read for CH1, remaining dummy byte
+uint16_t ADC_value; 					// to store 10 bit ADC result
+uint32_t PWM_duty;
+
 
 /* USER CODE END PV */
 
@@ -87,7 +98,15 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_USART2_UART_Init();
+  MX_SPI1_Init();
+  MX_TIM1_Init();
   /* USER CODE BEGIN 2 */
+
+  // Start PWM signal generation on TIM1 CH1
+  HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
+
+  // Set CS pin to high
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_8, GPIO_PIN_SET); // ref. pg 198 of STM doc
 
   /* USER CODE END 2 */
 
@@ -98,6 +117,25 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+
+	  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_8, GPIO_PIN_RESET); 	// pull CS to high
+
+	  // ADC communication over SPI; transmit/receive 3 bytes of data from SPI1, with 100ms timeout delay
+	  HAL_SPI_TransmitReceive(&hspi1, TxData, RxData, 3, 100);
+
+	  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_8, GPIO_PIN_SET);  		// pull CS to low
+
+	  // extract 10-bits of ADC data into 1 PWM signal; shifting MSB into correct position and combining data
+	  ADC_value = (RxData[1] & 0xFF ) << 8;
+	  ADC_value |= RxData[2];
+
+	  // compute duty cycle of 5-10% of 20ms
+	  PWM_duty = MIN_Count + ((MAX_Count - MIN_Count) * ADC_value) / ADC_MAX ;
+
+	  // turn ON duty cycle for PWM_duty count
+	  __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, PWM_duty);
+
+	  HAL_Delay(10);
   }
   /* USER CODE END 3 */
 }
