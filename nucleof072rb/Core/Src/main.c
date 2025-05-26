@@ -36,8 +36,8 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define MIN_Count 1000 // 1000 count = 1ms, min duty cycle
-#define MAX_Count 2000 // 2ms max duty cycle
+#define MIN_Count 3200 // 3200 count = 1ms, min duty cycle 5%
+#define MAX_Count 6400 // 6400 count = 2ms, max duty cycle 10%
 #define ADC_MAX 1023   // max digital value of ADC (2^10 - 1)
 /* USER CODE END PD */
 
