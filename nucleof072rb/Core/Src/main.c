@@ -118,15 +118,15 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
 
-	  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_8, GPIO_PIN_RESET); 	// pull CS to high
+	  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_8, GPIO_PIN_SET); 	// pull CS to high
 
 	  // ADC communication over SPI; transmit/receive 3 bytes of data from SPI1, with 100ms timeout delay
 	  HAL_SPI_TransmitReceive(&hspi1, TxData, RxData, 3, 100);
 
-	  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_8, GPIO_PIN_SET);  		// pull CS to low
+	  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_8, GPIO_PIN_RESET);  		// pull CS to low
 
 	  // extract 10-bits of ADC data into 1 PWM signal; shifting MSB into correct position and combining data
-	  ADC_value = (RxData[1] & 0xFF ) << 8;
+	  ADC_value = (RxData[1] & 0x03 ) << 8;
 	  ADC_value |= RxData[2];
 
 	  // compute duty cycle of 5-10% of 20ms
